@@ -1,0 +1,55 @@
+version: "3.9"
+
+x-app: &app
+  env_file:
+    - ./.env
+  restart: always
+
+services:
+  api:
+    build:
+      context: .
+    <<: *app
+    volumes:
+      - ./:/usr/src/app/
+    ports:
+      - "${APP_PORT}:${APP_PORT}"
+    depends_on:
+      api-database:
+        condition: service_healthy
+
+  api-migrations:
+    build:
+      context: .
+    <<: *app
+    restart: no
+    volumes:
+      - ./:/usr/src/app/
+    depends_on:
+      api-database:
+        condition: service_healthy
+    command: alembic upgrade head
+
+  api-database:
+    image: postgres:14
+    <<: *app
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "sh -c 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}'",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - api_db_data:/var/lib/postgresql/data/
+    environment:
+      TZ: "Europe/Moscow"
+      PGTZ: "Europe/Moscow"
+    ports:
+      - "5432:5432"
+
+volumes:
+  api_db_data:
+
