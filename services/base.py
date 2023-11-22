@@ -36,33 +36,34 @@ class Repository(ABC):
 
 
 class RepositoryDB(Repository, Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
-    def __init__(self, model: Type[ModelType]):
+    def __init__(self, model: Type[ModelType], db: AsyncSession):
         self._model = model
+        self.db = db
 
-    async def get(self, db: AsyncSession, id: Any) -> ModelType | None:
+    async def get(self, id: Any) -> ModelType | None:
         statement = select(self._model).where(self._model.id == id)
-        results = await db.execute(statement=statement)
+        results = await self.db.execute(statement=statement)
         return results.scalar_one_or_none()
 
-    async def get_multi(self, db: AsyncSession, *, skip=0, limit=100) -> list[ModelType]:
+    async def get_multi(self, *, skip=0, limit=100) -> list[ModelType]:
         statement = select(self._model).offset(skip).limit(limit)
-        results = await db.execute(statement=statement)
+        results = await self.db.execute(statement=statement)
         return results.scalars().all()
 
-    async def create(self, db: AsyncSession, *, obj_in: CreateSchemaType) -> ModelType:
+    async def create(self, *, obj_in: CreateSchemaType) -> ModelType:
         obj_in_data = jsonable_encoder(obj_in)
         db_obj = self._model(**obj_in_data)
-        db.add(db_obj)
-        await db.commit()
+        self.db.add(db_obj)
+        await self.db.commit()
         return db_obj
 
     async def update(
-        self, db: AsyncSession, *, db_obj: ModelType, obj_in: UpdateSchemaType | dict[str, Any]
+        self, *, db_obj: ModelType, obj_in: UpdateSchemaType | dict[str, Any]
     ) -> ModelType:
         # todo
         return db_obj
 
-    async def delete(self, db: AsyncSession, *, id: int) -> ModelType:
+    async def delete(self, *, id: int) -> ModelType:
         # todo
         db_obj = None
         return db_obj

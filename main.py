@@ -8,6 +8,7 @@ from api.v1.status import router as router_status
 from core.logger import LOGGING
 from core.settings import settings
 from db.db import create_database
+from dependencies.main import setup_dependencies
 
 app = FastAPI(
     title=settings.project_name,
@@ -28,6 +29,9 @@ async def startup():
 
 app.include_router(router_posts, prefix='/api/v1/posts')
 app.include_router(router_status, prefix='/api/v1/status')
+
+setup_dependencies(app)
+
 
 if __name__ == '__main__':
     uvicorn.run(

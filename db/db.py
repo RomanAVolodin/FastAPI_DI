@@ -19,7 +19,7 @@ async def purge_database() -> None:
         await conn.run_sync(Base.metadata.drop_all)
 
 
-async def get_session() -> AsyncSession:
+async def get_db_session() -> AsyncSession:
     async with async_session() as session:
         try:
             yield session
